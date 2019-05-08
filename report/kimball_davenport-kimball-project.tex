@@ -44,7 +44,9 @@ Extensive knowledge of the world appears to be encoded, albeit perhaps vaguely, 
 	\end{figure}
 
 \subsection{Classifier Features}
-	The WSD head implemented for this project offers the option to extend the hidden BERT model outputs with WordNet categories as additiona features.  These are represented as a one-hot coding of 6 affordance categories corresponding roughly to parts of speech, which categorize the WordNet sense inventory used to tag our corpora.  Another option implemented in the WSD head is an additional dense layer with non-linearity and layer normalization, preceeding the final dropout and classifier layers.  
+	The WSD head implemented for this project offers the option to extend the hidden BERT model outputs with WordNet categories as additional features.  These are represented as a one-hot coding of 6 affordance categories corresponding roughly to parts of speech, which categorize the WordNet sense inventory used to tag our corpora.  Another option implemented in the WSD head is an additional dense layer with non-linearity and layer normalization, preceeding the final dropout and classifier layers.  
+\subsection{Training Performace}
+	As presently parameterized, training one configuration of the WSD head (plain, wide, deep, or deep and wide) takes 45 minutes on a 4GB GTX1060 GPU.        
 \section{Results}
 \subsection{The WSDEval Test Set}
 	Over the years, many test datasets have emerged for WSD systems. WSDEval combines all of these with WordNet sense annotations to create a unified evaluation schema for WSD systems \cite{wsdeval}. It consists of five all-words datasets taken from the SemEval and Senseval task series, in addition to large SemCor and OMSTI training corpora for supervised systems, all of which have been modified to ensure a consistent data standard and tagged with the WordNet 3.0 sense inventory. We additionally acquired Google Research's available WSD corpora, consisting of SemCor and Masc documents annotated with NOAD word senses.
@@ -58,14 +60,17 @@ Extensive knowledge of the world appears to be encoded, albeit perhaps vaguely, 
 			System & Dev Data & Test Data & Unified Data \\
 			\hline
 			local supWSD & 50.7 & 51.9 & 65.3 \\
-			BERT + WSD head (wide) & 00.0 & 00.0 & 00.0 \\
-			BERT + WSD head (deep) & 00.0 & 00.0 & 00.0
+			BERTForWSD (simple) & 00.0 & 00.0 & 00.0 \\
+			BERTForWSD (wide) & 00.0 & 00.0 & 00.0 \\
+			BERTForWSD (deep) & 00.0 & 00.0 & 00.0 \\
+			BERTForWSD (wide+deep) & 00.0 & 00.0 & 00.0
 		\end{tabular}
 		\caption{Test results: local supWSD vs. our developed BERT head across collected test data.}
 		\label{table:fscore1}
 	\end{table}
 	These numbers would, at the very least, seem to suggest that supWSD's performance may be overtuned on the WSDEval set, and its performance in a more generalized context should be studied more, or could be improved with adjustments. 
-	
+\subsection{Analysis}
+	The test code evaluates the batch variance of F1 macro and micro scores, as well as global scores.  One defect of the test code is that the logit threshold for the classifier boundary is determined using the test data.  This is a bug.  That boundary should be determined in training.  In fact, it is currently a simple level boundary, but clearly much higher classification performance can be derived by training it conditionally, with another network, or some other mechanism.  No investigation of the appropriate features for this task has yet been done.
 \section{Conclusions}
 
 
