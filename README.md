@@ -21,28 +21,28 @@ q. v.  links.sh
 * reproduce supWSD F scores
 
 cd $ROOT/supWSD
-. _setpath.sh
+. ../scripts/_setpath.sh
 
 export WSDTRAINDATA="$PROJROOT"/data/filtered/semcor.xml
 export WSDTRAINKEY="$PROJROOT"/data/filtered/semcor.key
-./train.sh
+../scripts/train.sh
 
 export WSDTESTDATA="$PROJROOT"/data/filtered/unified.xml
 export WSDTESTKEY="$PROJROOT"/data/filtered/unified.key
-./test.sh
+../scripts/test.sh
 
 export WSDTESTDATA="$PROJROOT"/data/filtered/dev.xml
 export WSDTESTKEY="$PROJROOT"/data/filtered/dev.key
-./test.sh
+../scripts/test.sh
 
 export WSDTESTDATA="$PROJROOT"/data/filtered/test.xml
 export WSDTESTKEY="$PROJROOT"/data/filtered/test.key
-./test.sh
+../scripts/test.sh
 
 * reproduce BertForWSD F scores
 
 cd $ROOT/pytorch-pretrained-BERT
-. _env.sh
+. ../scripts/_env.sh
 python -m p save=semcor.bin semcor training
 for test in unified dev test; do       
     python -m p load=semcor.bin $test testing

@@ -22,7 +22,8 @@ from collections import Counter
 PROJ_ROOT = os.getenv('PROJ_ROOT')
 if PROJ_ROOT is None:
     PROJ_ROOT = '/home/tony/csci/project/'
-
+elif PROJ_ROOT[-1] != '/':
+    PROJ_ROOT += '/'
 BERT_DIR = PROJ_ROOT + 'pytorch-pretrained-BERT'
 ENV_PKG_DIR = os.getenv('HOME') + \
     '.conda/envs/ptbert/lib/python3.7/site-packages/'
@@ -147,7 +148,7 @@ MAX_SHIFTS = 32
 NON_DECAY_UNITS = ['bias', 'layernorm.bias', 'layernorm.weight']
 BERT_CACHE_DIR = '/'.join((os.getenv('HOME'), '.pytorch_pretrained_bert'))
 
-PAD_FILE = UNIFIED_TEST_DIR + 'pad.txt'
+PAD_FILE = PROJ_ROOT + 'data/pad.txt'
 
 VOCAB_DIR = PROJ_ROOT + MODEL_INFO['large']['dir']
 VOCAB_FILE = VOCAB_DIR + 'vocab.txt'
