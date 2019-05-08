@@ -18,6 +18,10 @@ ln -s ./supWSD/WSD_Unified_Evaluation_Datasets  ../data/WSD_Unified_Evaluation_D
 
 q. v.  links.sh
 
+scripts presently expect a clone of
+  huggingface/pytorch-pretrained-BERT and/or SI3P/supWSD
+in the PROJ_ROOT directory
+
 * reproduce supWSD F scores
 
 cd $ROOT/supWSD
