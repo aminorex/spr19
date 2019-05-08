@@ -1,0 +1,29 @@
+
+all-words wsd (annotates every word in corpus)
+* difficult to beat strong baseline, which is just assigning the most frequent sense with no context
+
+two algorithms:
+* LSTM, taking into account word order, improves on word2vec
+* semi-supervised based on label propagation, improves estimation of sense distribution
+
+start with baseline classifier using 1000d embeddings, most frequent million words, base sense embeddings on context embeddings of sentences in which they appear
+
+LSTM directional language model -
+* mask focus word, project hidden layer to context layer after consuming the rest of the sentence, use softmax to predict the masked focus word
+* regularization and dropout used to avoid overfitting
+* similarity between context calculated based on overlap between predicted words, but context layer from which the predictions are computed is used as the actual context representation
+* sense vectors created by averaging context vectors of all training sentences with the same sense
+* classify words in context by finding the sense vector with maximum cosine similarity to context vector
+
+drawbacks of the preceding algorithm: assumes spherical shape, unable to accurately model decision boundaries due to limited examples; has no training data for and fails to model sense prior
+
+semi-supervised -
+* augment labeled example sentences with large unlabeled web corpus
+* propagate sense labels from labeled to unlabeled sentences
+label-propagation (LP) graph: vertices with labeled seed nodes, undirected weighted edges; iteratively computes distribution f labels on vertices
+* construct graph per lemma with labeled vertices for labeled sentences and unlabeled vertices for external corpus sentences containing that lemma
+* similar sentences are connected by edge weighted as cosine similarity based on LSTM language model
+* create additional vertex for novel sentences, and propagate sense labels from seed vertices to unlabeled vertices
+* rank vertex pairs by similarity, connect pairs above 95th percentile, and ensure each vertex has at least 10 connections
+* semi-supervised is slow compared to nearest neighbor due to label propagation calculations
+

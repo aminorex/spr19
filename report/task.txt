@@ -1,0 +1,11 @@
+supwsd:
+4 tests, 2 training with 2 tests each (dev + test)
+train on small.xml in pytorch-pretrained-bert/bodies
+then train on train.xml
+
+data:
+google wsd corpus (github) - word sense disambiguation corpora
++ data from supwsd (OMSTI+SemCor+WSDEval)
+concat all
+take 3/1000 as test, 8/1000 as dev, 20% of remainder used for small case training (scaling up if possible)
+

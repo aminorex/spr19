@@ -1,0 +1,247 @@
+
+=== CSci 724 Project Notes ===
+
+A log of the steps taken in fulfillment of the proposed project, and any revisions thereof.
+
+== The Proposed Project ==
+
+1. Establish WSD ~SOTA baseline by reproducing the method of
+     Papandrea, Raganato and Delli Bovi,
+     "SupWSD: A Flexible Toolkit for Supervised Word Sense Disambiguation",
+     Proceedings of the 2017 EMNLP System Demonstrations (pp 103-108),
+     Association for Computational Linguistics (2017).
+   
+2. Select an untried SOTA-class language model.
+
+3. Develop code to sample distributions of SOTA-class language model(s)
+   conditional on token sequence context.
+
+4. For WordNet 3.0 senses of ambiguous terms, derive a distribution of
+   predicted synsets per term from sample distribution, measure divergence
+   from gold key for test data, using LM predictions, and compare to SupWSD.
+
+5. Computed boosted results, compare.
+
+6. Repeat from 2 (as time available and evidence warrants).
+
+7. Analyze, describe results.
+
+
+== Phase I: Establish baseline ==
+
+= 27 Mar 2018 =
+
+environment ubuntu 18.04.1 LTS
+/home/tony/csci/project/supWSD
+
+dl stanford-nlp-core  October 5th, 2018 (not needed?)
+CLASSPATH includes jars from /home/tony/tools/nlp
+
+% git clone supWSD
+% cd supWSD
+
+downloads from README.md links
+dl embeddings_skiup_wackyen_400d.bin
+dl wackyEN.vocab.txt
+dl omstiEmb.tar.gz
+dl semcorEmb.tar.gz
+
+dl http://lcl.uniroma1.it/wsdeval/data/WSD_Unified_Evaluation_Datasets.zip
+dl http://lcl.uniroma1.it/wsdeval/data/WSD_Training_Corpora.zip
+dl WNdb-3.0.tar.gz
+
+% tar xf WNdb-3.0.tar.gz
+% mkdir out
+
+edit supconfig.xml for stanford, supWSD directory paths (including "out")
+edit resources/wndictionary/prop.xml:dictionary_path for supWSD/dict from tar cmd
+
+Miniconda 3.7 64-bit dl/install in /opt/miniconda3 #not needed?
+
+% apt install wordnet wordnet-dev #not needed?
+% apt install default-jdk ant maven maven-ant-helper
+% mvn package
+new: target/supwsd-toolkit-1.0.0.jar
+
+% cat <<<EOF > _setpath.sh
+export CLASSPATH="/home/tony/csci/project/supWSD/target/supwsd-toolkit-1.0.0.jar"
+for f in /home/tony/csci/project/supWSD/target/dependency-jars/*.jar; do
+    export CLASSPATH=${CLASSPATH}:$f
+done
+export WSD_TRAIN=$(realpath WSD_Training_Corpora/SemCor+OMSTI/semcor+omsti.data.xml)
+export WSD_KEY=$(realpath WSD_Training_Corpora/SemCor+OMSTI/semcor+omsti.gold.key.txt)
+EOF
+% . _setpath.sh
+% java -jar target/supwsd-toolkit-1.0.0.jar train supconfig.xml $WSD_TRAIN $WSD_KEY
+
+remove blank token from wackyEN.vocab.txt line 3357, count 64049
+exception reading embeddings...bin
+debug. found it was attempting to read vectors as text.
+wrote v.py to recode binary vectors to 8 GB of text.
+
+= 28 Mar 2018 = 
+
+edit pom.xml add <version>3.0.0</version> for maven-jar-plugin
+dl https://www.slf4j.org/dist/slf4j-1.7.26.tar.gz
+add dependency slf4j-simple to pom.xml
+
+debug <parser>lexical</parser> issues:
+edit supconfig.xml again: change parser to semcor13
+
+= 29 March 2018 =
+
+some wacky classpath problem.  extract all jars into target/classes
+  for direct inclusion into supwsd-tools-1.0.0.jar
+
+make various null pointer tests in code base to deal with NPE
+remove corpus tags internal to semcor+omsti.data.xml to avoid parser failure
+java -mx26g -jar
+ran with larger heap
+training runs 90 minutes to conclusion with max 20gb resident.
+
+= 30 March 2018 =
+
+661480 kebibytes in project/out/models and project/out/stats
+begin scoring
+max 10 gb resident
+result (in 2 minutes clock):
+
+precision : 0.683 ( 4953 correct of 7252 attempted )
+recall : 0.683 ( 4953 correct of 7253 in total )
+f : 0.683
+attempted : 1.000 ( 7252 attempted of 7253 in total )
+
+Without hyperparameter tuning, this compares to 0.72 SOTA in the supWSD paper.  
+Good enough baseline to merit beginning the next phase.  
+
+
+== Phase II(a): Select feasible LM.
+
+% conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
+% conda install pandas scikit-learn tqdm
+
+= 1 Apr =
+
+% cd project/pytorch-openai-transformer-lm
+% ln -s ../finetune-transformer-lm/model .
+% python ./generate.py
+
+= 3 Apr =
+
+# Reversing generate.py
+# not going to easily give masked predictions, switch to BERT
+
+% conda install boto3 pytest
+cd ../pytorch-pretrained-BERT
+
+# omitted several days of logging 
+# trained finetuned masked pytorch bert language model on OMSTI + Semcor
+# wrote code to generate logits for vocabulary items in masked positions
+# ran tensorflow bert collab notebook
+
+= 28 Apr =
+
+# wrote presentation
+# built dataset from MASC and semeval
+# scripts for data wrangling
+
+= 29 Apr =
+
+# generate new finetuning set
+
+= 1 May =
+
+# scripts for validation of data
+# sentence.py
+# merge.py
+# filter.py
+# vocab-filter.py
+# index-sense.py
+# senses.py
+
+
+
+= TODO =
+
+* find how to run the eval from supWSD over on-disk results
+* write lm head for wsd
+* use only single sense cases?
+
+* pos tags for instances, input to head
+* polysemy: multi-hot works too!  relax constraint
+* limit sentence length 5-100
+* move data generator to xml
+
+overlap requirements:
+ b: vocab
+ w: xml
+
+2-way head input idea:
+after dropout layer (usable for active learning? -- big win!)
+add POS tag inputs (6 tags for WN or all tags from xml input?)
+collapse word pieces to token
+use lemma
+
+fine-tune over ALL POSITIONS
+use test/train with balance over senses (all senses in test have high coverage in their positions of occurrence.
+length is 5 to 100 tokens, so train over 100 positions by prefixing/suffixing with 95 to 5 tokens and masking attention on the pad
+need prefix and suffix data for each sample.
+
+MAX 85:
+	ninst 	nsense	nuniqs	nfilt	nsent	filt	filt4
+google	253752		81419		51368	21269	37424
+test	7253	7611	3669		1093	1093	1129
+semcor	226036		33362		37176	14275	16079
+omsti	1137170		33960		850974	593833	664655
+
+total			90864		940611		
+
+# find POS tags used
+(base) tony@emmy:~/csci/project/pytorch-pretrained-BERT$ grep pos= ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.data.xml | sed 's,.* pos="\([^"]*\)".*,\1,' | sort -u -o test.tags
+(base) tony@emmy:~/csci/project/data/word_sense_disambigation_corpora$ find masc semcor -name \*xml | wc -l
+742
+(ptbert) tony@emmy:~/csci/project/ppb$ python -m p semcor
+3866 valid, 33309 invalid lines with 899 of 10922 senses
+(ptbert) tony@emmy:~/csci/project/ppb$ python -m p test
+1132 valid, 40 invalid lines with 3660 of 10922 senses
+(ptbert) tony@emmy:~/csci/project/ppb$ sed 's,\., ,g' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | cut -d ' ' -f-3 | sed 's, ,.,g' | sort -u | wc -l
+1093 - sentences
+(ptbert) tony@emmy:~/csci/project/ppb$ cut -f2- -d ' ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | wc -l
+7253
+(ptbert) tony@emmy:~/csci/project/ppb$ cut -f2- -d ' ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | sed 's, ,\n,g' | wc -l
+7611
+(ptbert) tony@emmy:~/csci/project/ppb$ grep ' .* ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | wc -l
+340 poly cases
+(ptbert) tony@emmy:~/csci/project/ppb$ grep ' .* ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt > ALL.poly
+(ptbert) tony@emmy:~/csci/project/ppb$ grep ' .* ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt |cut -f2- -d ' '|sed 's, ,\n,g' | wc -l
+698 senses for poly cases  698 = 340 * 2 + 18
+7611-7253
+358  added senses due to poly - 340 + 18
+(ptbert) tony@emmy:~/csci/project/ppb$ cat < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt |cut -f2- -d ' '|sed 's, ,\n,g' | sort -u -o test.senses
+(ptbert) tony@emmy:~/csci/project/ppb$ wc test.senses 
+ 3669  3669 68248 test.senses
+(ptbert) tony@emmy:~/csci/project/ppb$ cut -f1- -d ' ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | sed 's, ,\n,g' | sort -u wc -l
+sort: invalid option -- 'l'
+Try 'sort --help' for more information.
+(ptbert) tony@emmy:~/csci/project/ppb$ cut -f1- -d ' ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | sed 's, ,\n,g' | sort -u | wc -l
+10922
+(ptbert) tony@emmy:~/csci/project/ppb$ cd ../data/WSD_Unified_Evaluation_Datasets/ALL/
+(ptbert) tony@emmy:~/csci/project/data/WSD_Unified_Evaluation_Datasets/ALL$ cut -f2- -d ' ' < ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt | sed 's, ,\n,g' | sort -u -o ALL.senses 
+bash: ../data/WSD_Unified_Evaluation_Datasets/ALL/ALL.gold.key.txt: No such file or directory
+(ptbert) tony@emmy:~/csci/project/data/WSD_Unified_Evaluation_Datasets/ALL$ cut -f2- -d ' ' < ALL.gold.key.txt | sed 's, ,\n,g' | sort -u -o ALL.senses 
+(ptbert) tony@emmy:~/csci/project/data/WSD_Training_Corpora/SemCor$ cut -f2- -d ' ' < semcor.gold.key.txt | sed 's, ,\n,g' | sort -u -o semcor.senses 
+33362 semcor.senses
+(ptbert) tony@emmy:~/csci/project/data/WSD_Training_Corpora/SemCor+OMSTI$ cut -f2- -d ' ' < semcor+omsti.gold.key.txt | sed 's, ,\n,g' | sort -u -o semcor+omsti.senses 
+33960 semcor+omsti.senses
+(ptbert) tony@emmy:~/csci/project/data/word_sense_disambigation_corpora$ cut -f2- < combined_map.txt | sed 's/,/\n/g' | sort -u -o all.senses 
+  81419   81419 1655717 all.senses
+(ptbert) tony@emmy:~/csci/project/data/word_sense_disambigation_corpora$ cat all.senses ../WSD_Training_Corpora/SemCor/semcor.senses ../WSD_Training_Corpora/SemCor+OMSTI/semcor+omsti.senses ../WSD_Unified_Evaluation_Datasets/ALL/ALL.senses | sort -u | wc -l
+90864
+(ptbert) tony@emmy:~/csci/project/data/word_sense_disambigation_corpora$ 
+ 
+
+
+
+
+
+

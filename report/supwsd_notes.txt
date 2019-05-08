@@ -1,0 +1,45 @@
+supwsd
+
+- f-score in wsd
+- relationship between synset and sense
+
+
+sentence 512 padded fixed length
+deep vocab length
+1-hot marked
+provide segment 1-hot sequence
+
+pair unmasked and masked sentences, extract sense assigned to masked position
+label with senses
+enumerate all used unambiguous senses that occur in dev data, test data, and training examples
+
+nonambiguous senses from semcor - use as labels
+
+2:47 - 3:00
+
+lm head: vocab-sized output
+fixed </text></corpus> tags missing in WSD unified eval ALL set - single-sense version
+fixed text/corpus tags missing in google.xml
+supWSD (trained on filtered semcor in data/semcor-split)
+all-out		unified		dev			test		
+0.649		0.653		0.507		0.519
+bert + wsd head
+			unified		dev			test
+			0.000		0.000		0.000
+
+pytorch data loader class - used to get batches
+batch size * sequence length
+
+model: bertforwsd
+initialized, configurable number of classes (extends size of hidden state to represent encodings of wordnet senses), depth (additional linear layer, nonlinearity, layer norm)
+dropout, linear classifier
+
+forward step: token, mask, labels (senses)
+executes each layer in turn, can concat onto first linear layer output
+compute cross entropy loss if lables are provided
+
+include discussion of increasing number of parameters - less likely to get caught in local minimum during optimization, due to higher probability of any minimum in a subspace becomes saddle point in enclosing space
+
+1-hot tensor
+
+additional potential options:
